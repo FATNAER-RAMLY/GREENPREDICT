@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenPredict 🌿</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background"></div>
+    <div class="container">
+        <h1>GreenPredict🌿</h1>
+        <p class="subheader">Téléchargez une image de feuille pour détecter les maladies des plantes.</p>
+
+        <!-- Zone de téléchargement d'image -->
+        <div class="upload-section">
+            <form action="/" method="post" enctype="multipart/form-data">
+                <label for="file" class="upload-label">
+                    <span class="upload-icon">📁</span>
+                    <span class="upload-text">Choisir une image</span>
+                </label>
+                <input type="file" name="file" id="file" accept=".jpg, .jpeg, .png" required>
+                <button type="submit" class="upload-button">Analyser l'image</button>
+            </form>
+        </div>
+
+        <!-- Aperçu de l'image téléchargée -->
+        <div class="image-preview" id="image-preview" style="display: none;">
+            <h2>Aperçu de l'Image</h2>
+            <div class="image-container">
+                <img id="preview" src="#" alt="Aperçu de l'image" class="uploaded-image">
+            </div>
+        </div>
+
+        <!-- Résultats de la prédiction -->
+        {% if results %}
+        <div class="result-section">
+            <h2>Résultats de la Prédiction</h2>
+
+            <!-- Afficher la maladie prédite -->
+            <div class="prediction-card">
+                <p><strong>La maladie prédite est :</strong> <span class="predicted-class">{{ results.predicted_class }}</span></p>
+            </div>
+
+            <!-- Afficher les probabilités par classe -->
+            <h3>Probabilités par classe :</h3>
+            <div class="prob-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Classe</th>
+                            <th>Probabilité</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for class_name, prob in results.probabilities.items() %}
+                        <tr>
+                            <td>{{ class_name }}</td>
+                            <td>{{ "%.2f"|format(prob * 100) }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Graphique des probabilités -->
+            <div class="chart-container">
+                <canvas id="probChart"></canvas>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Pied de page -->
+        <footer class="footer">
+            Développé avec ❤️ par FATNA ER-RAMLY, HAJAR EL MZALNI et NAOUAL KHLOUFI
+        </footer>
+    </div>
+
+    <!-- Chart.js pour le graphique -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Données pour le graphique
+        {% if results %}
+        const labels = {{ results.probabilities.keys() | list | tojson | safe }};
+        const data = {{ results.probabilities.values() | list | tojson | safe }};
+
+        // Configuration du graphique
+        const ctx = document.getElementById('probChart').getContext('2d');
+        const probChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Probabilités',
+                    data: data,
+                    backgroundColor: 'rgba(46, 134, 193, 0.6)',
+                    borderColor: 'rgba(46, 134, 193, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 1
+                    }
+                }
+            }
+        });
+        {% endif %}
+
+        // JavaScript pour l'aperçu de l'image
+        document.getElementById('file').addEventListener('change', function(event) {
+            const file = event.target.files[0];  // Récupérer le fichier sélectionné
+            const preview = document.getElementById('preview');  // Récupérer l'élément img pour l'aperçu
+            const imagePreview = document.getElementById('image-preview');  // Récupérer le conteneur de l'aperçu
+
+            if (file) {
+                const reader = new FileReader();  // Créer un FileReader pour lire le fichier
+
+                // Lorsque le fichier est lu, afficher l'aperçu
+                reader.onload = function(e) {
+                    preview.src = e.target.result;  // Définir la source de l'image
+                    imagePreview.style.display = 'block';  // Afficher le conteneur de l'aperçu
+                };
+
+                reader.readAsDataURL(file);  // Lire le fichier comme une URL de données
+            } else {
+                preview.src = '#';  // Réinitialiser l'aperçu si aucun fichier n'est sélectionné
+                imagePreview.style.display = 'none';  // Masquer le conteneur de l'aperçu
+            }
+        });
+    </script>
+</body>
+</html>
